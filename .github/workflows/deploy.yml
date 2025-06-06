@@ -11,6 +11,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -25,13 +26,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set Repository Name in Lowercase
+        id: repo_name_lowercase
+        run: echo "repo_lowercase=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository | lower }}:latest
+          tags: ghcr.io/${{ steps.repo_name_lowercase.outputs.repo_lowercase }}:latest
 
   deploy:
     needs: build
@@ -51,6 +56,10 @@ jobs:
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+      - name: Set Repository Name in Lowercase for Deploy
+        id: repo_name_lowercase_deploy
+        run: echo "repo_lowercase=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -59,12 +68,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/${{ secrets.VPS_USER }}/workspace/test-deploy 
-            
-            git pull origin main
 
-            # Pull de la última imagen Docker desde GHCR
-            # Formato: ghcr.io/nombre_usuario_github/nombre_repo:tag
-            docker pull ghcr.io/${{ github.repository }}:latest
+            git pull origin main
+            docker pull ghcr.io/${{ steps.repo_name_lowercase_deploy.outputs.repo_lowercase }}:latest # <-- ¡CAMBIO AQUÍ!
 
             docker-compose down || true
             docker-compose up -d
