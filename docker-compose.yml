@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: ghcr.io/davidkeprott/saguaro-front-vue:latest
+    image: ghcr.io/drap-3312/vue-test-deploy:latest
 
     container_name: vue-app-container
     restart: always
