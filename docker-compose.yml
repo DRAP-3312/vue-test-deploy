@@ -2,9 +2,9 @@ version: '3.8'
 
 services:
   web:
-    # Use the Docker image that we will build and push
-    image: davidkeprott/saguaro-front-vue:latest
+    image: ghcr.io/davidkeprott/saguaro-front-vue:latest
+
     container_name: vue-app-container
-    restart: always # Ensure the container restarts if it fails
+    restart: always
     ports:
-      - "80:80" # Map host port 80 to container port 80
+      - "80:80"

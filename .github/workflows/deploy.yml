@@ -1,39 +1,40 @@
 name: Deploy Vue App to VPS
 
-# This workflow will run every time a push is made to the 'main' branch
 on:
   push:
     branches:
-      - main # <-- Change this to your main branch if it's different (e.g., master, develop)
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Run the job on a Linux virtual machine (Ubuntu)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4 # Clones your repository
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3 # Sets up Buildx for building Docker images
+        uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
-        # Authenticates with Docker Hub using GitHub secrets
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: . # The context for building the image (the root of your repo)
-          file: ./Dockerfile # Path to your Dockerfile
-          push: true # Upload the image to Docker Hub
-          # Define the image tag: your_dockerhub_user/app_name:latest
-          tags: ${{ secrets.DOCKER_USERNAME }}/saguaro-front-vue:latest
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
 
   deploy:
-    needs: build # This job depends on the 'build' job completing successfully
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -45,7 +46,6 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Add VPS to known_hosts
-        
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
@@ -58,17 +58,14 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/${{ secrets.VPS_USER }}/workspace/test-deploy
-            git pull origin main
+            cd /home/${{ secrets.VPS_USER }}/workspace/test-deploy 
             
-            # Stop and remove old containers
+            git pull origin main
+
+            # Pull de la última imagen Docker desde GHCR
+            # Formato: ghcr.io/nombre_usuario_github/nombre_repo:tag
+            docker pull ghcr.io/${{ github.repository }}:latest
+
             docker-compose down || true
-
-            # Pull the latest Docker image from the registry
-            docker pull ${{ secrets.DOCKER_USERNAME }}/saguaro-front-vue:latest
-
-            # Start new containers in detached mode
             docker-compose up -d
-
-            # Optional: clean up old images to free up space
             docker image prune -f
