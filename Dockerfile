@@ -14,21 +14,20 @@ RUN npm install
 COPY . .
 
 # Build the Vue.js application for production
-# 'npm run build' is the standard command for Vue/Vite applications
-# Ensure this command is correct for your project
-RUN npm run build
+# Esto crea la carpeta 'dist' dentro del contenedor en /app/dist
+RUN npm npm run build
 
-# Stage 2: Serve the application with Nginx
+# Stage 2: Serve the application with Nginx (dentro del contenedor)
 FROM nginx:alpine AS production-stage
 
-# Copy your custom Nginx configuration
+# Copia tu configuración de Nginx (que ya tenías para servir el index.html)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy the built application files from the build stage to the Nginx path
+# Copia los archivos construidos de la etapa de construcción a la ruta de Nginx
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# Expose port 80 where Nginx will listen for requests
+# Expone el puerto 80 donde Nginx escuchará DENTRO del contenedor
 EXPOSE 80
 
-# Command to start Nginx when the container runs
+# Comando para iniciar Nginx cuando el contenedor se ejecute
 CMD ["nginx", "-g", "daemon off;"]

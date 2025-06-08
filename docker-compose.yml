@@ -1,10 +1,20 @@
 version: '3.8'
 
 services:
-  web:
-    image: ghcr.io/drap-3312/vue-test-deploy:latest
+  frontend:
+    build: .
+    
+    networks:
+      - caddy
+    environment:
+      - PORT=80
+    deploy:
+      replicas: 1
+      labels:
+        caddy: "saguarodrap.dev"
+        caddy.reverse_proxy: "{{upstreams 80}}"
+        caddy.tls: "davidake117@gmail.com"
 
-    container_name: vue-app-container
-    restart: always
-    ports:
-      - "80:80"
+networks:
+  caddy:
+    external: true
