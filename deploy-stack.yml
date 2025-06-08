@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    build: .
+    image: ghcr.io/drap-3312/vue-test-deploy:latest
     
     networks:
       - caddy

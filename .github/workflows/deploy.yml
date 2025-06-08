@@ -1,4 +1,4 @@
-name: Deploy Vue.js Frontend to Swarm
+name: Deploy Vue App to VPS
 
 on:
   push:
@@ -6,11 +6,18 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -19,20 +26,59 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Set Repository Name in Lowercase
+        id: repo_name_lowercase
+        run: echo "repo_lowercase=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/vue-test-deploy:latest
+          tags: ghcr.io/${{ steps.repo_name_lowercase.outputs.repo_lowercase }}:latest
 
-      - name: Deploy to Docker Swarm on VPS
-        uses: appleboy/ssh-action@master
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add VPS to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Set Repository Name in Lowercase for Deploy
+        id: repo_name_lowercase_deploy
+        run: echo "repo_lowercase=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Copy deploy-stack.yml to VPS
+        uses: appleboy/scp-action@v0.1.6
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "deploy-stack.yml"
+          target: "/home/${{ secrets.VPS_USER }}/workspace/test-deploy/"
+          
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/workspace/test-deploy/ # Navega a tu directorio de trabajo en el VPS
-            docker pull ghcr.io/${{ github.repository }}/vue-test-deploy:latest
+            cd /home/${{ secrets.VPS_USER }}/workspace/test-deploy 
+
+            docker pull ghcr.io/${{ steps.repo_name_lowercase_deploy.outputs.repo_lowercase }}:latest
+            
             docker stack deploy -c deploy-stack.yml frontend-app
+            docker image prune -f
