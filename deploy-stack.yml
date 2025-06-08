@@ -11,7 +11,7 @@ services:
     deploy:
       replicas: 1
       labels:
-        caddy: "saguarodrap.dev"
+        caddy: "front-vue.saguarodrap.dev"
         caddy.reverse_proxy: "{{upstreams 80}}"
         caddy.tls: "davidake117@gmail.com"
 
