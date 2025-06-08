@@ -66,7 +66,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "deploy/deploy-stack.yml"
+          source: ".deploy/deploy-stack.yml"
           target: "/home/${{ secrets.VPS_USER }}/workspace/test-deploy/"
           
       - name: Deploy to VPS
