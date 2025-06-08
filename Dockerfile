@@ -15,7 +15,7 @@ COPY . .
 
 # Build the Vue.js application for production
 # Esto crea la carpeta 'dist' dentro del contenedor en /app/dist
-RUN npm npm run build
+RUN npm run build
 
 # Stage 2: Serve the application with Nginx (dentro del contenedor)
 FROM nginx:alpine AS production-stage
