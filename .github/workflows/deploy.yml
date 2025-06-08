@@ -78,7 +78,19 @@ jobs:
           script: |
             cd /home/${{ secrets.VPS_USER }}/workspace/test-deploy 
 
+            echo ">>> Pulling latest Docker image..."
             docker pull ghcr.io/${{ steps.repo_name_lowercase_deploy.outputs.repo_lowercase }}:latest
             
+            echo ">>> Deploying Docker stack..."
             docker stack deploy -c deploy-stack.yml frontend-app
-            docker image prune -f
+            
+            echo ">>> Waiting for service update (10 seconds)..."
+            sleep 10
+
+            echo ">>> Pruning stopped containers..."
+            sudo docker container prune -f
+
+            echo ">>> Pruning unused images..."
+            sudo docker image prune -f
+
+            echo ">>> Docker system cleanup completed."

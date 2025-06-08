@@ -11,7 +11,7 @@ import HelloWorld from './components/HelloWorld.vue'
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
   </div>
-  <HelloWorld msg="Test deploy web by DRAP" />
+  <HelloWorld msg="Test deploy vue web by DRAP" />
 </template>
 
 <style scoped>
