@@ -6,19 +6,13 @@ services:
     networks:
       - caddy
     environment:
-      - PORT=80 # Asegúrate que tu aplicación Vue realmente escucha en el puerto 80 dentro del contenedor
+      - PORT=80
     deploy:
       replicas: 1
       labels:
-        # --- Configuración para front-vue.saguarodrap.dev ---
-        caddy: "front-vue.saguarodrap.dev" # Etiqueta principal para el primer dominio
-        caddy.reverse_proxy: "{{upstreams 80}}" # Redirige a tu frontend Vue en el puerto 80 (o el que corresponda)
-        caddy.tls: "davidake117@gmail.com" # Tu email para certificados de front-vue
-
-        # --- Configuración para n8n.saguarodrap.dev ---
-        caddy_0: "n8n.saguarodrap.dev" # Usa un índice para la segunda etiqueta (caddy_0, caddy_1, etc.)
-        caddy_0.reverse_proxy: "{{upstreams n8n-app_n8n:5678}}" # Redirige a tu servicio n8n. IMPORTANTE: el nombre del servicio de n8n es `n8n-app_n8n` y su puerto interno es 5678.
-        caddy_0.tls: "davidake117@gmail.com" # Tu email para certificados de n8n
+        caddy: "front-vue.saguarodrap.dev" 
+        caddy.reverse_proxy: "{{upstreams 80}}" 
+        caddy.tls: "davidake117@gmail.com" 
 
 networks:
   caddy:
